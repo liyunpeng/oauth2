@@ -83,6 +83,7 @@ func main() {
 		}
 	})
 
+	// 接收客户端token请求
 	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		err := srv.HandleTokenRequest(w, r)
 		fmt.Println("token 请求处理， w=",w, "r=", r)
@@ -112,12 +113,15 @@ func main() {
 	log.Fatal(http.ListenAndServe(":9096", nil))
 }
 
+/*
+被HandleAuthorizeRequest 回调， 做初步检查， 没有登录到认证服务器器， 要先登录到认证服务器
+ */
 func userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string, err error) {
 	store, err := session.Start(nil, w, r)
 	if err != nil {
 		return
 	}
-
+	fmt.Println("userAuthorizeHandler \n\n")
 	uid, ok := store.Get("LoggedInUserID")
 	if !ok {
 		if r.Form == nil {
@@ -151,6 +155,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("login handler session= ", store)
 		fmt.Println("login handler requeset= ", r)
+		// 重定向到授权页面
 		w.Header().Set("Location", "/auth")
 		w.WriteHeader(http.StatusFound)
 		return
@@ -158,6 +163,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	outputHTML(w, r, "static/login.html")
 }
 
+// 生成授权页面
 func authHandler(w http.ResponseWriter, r *http.Request) {
 	store, err := session.Start(nil, w, r)
 	if err != nil {
@@ -165,6 +171,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("/auth authHandler, sesstion=", store)
 	if _, ok := store.Get("LoggedInUserID"); !ok {
 		w.Header().Set("Location", "/login")
 		w.WriteHeader(http.StatusFound)
